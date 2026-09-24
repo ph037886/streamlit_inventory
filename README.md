@@ -1,0 +1,2 @@
+# streamlit_inventory
+streamlit架構下的藥局盤點系統
