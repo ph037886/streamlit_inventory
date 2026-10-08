@@ -12,7 +12,7 @@ def get_his_info(diacode): #取得藥品基本資料
     , DA_CHNAME
     , DA_CNAME
     FROM FROM_HIS
-    WHERE DA_DIACODE='&diacode'
+    WHERE DA_DIACODE=upper('&diacode')
     """
     
     sql=sql.replace('&diacode', diacode)
@@ -24,7 +24,7 @@ def get_realworld_site(diacode):
     sql="""
         SELECT *
         FROM REALWORLD_SITE
-        WHERE RS_DIACODE='&diacode'
+        WHERE RS_DIACODE=upper('&diacode')
         """
         
     sql=sql.replace('&diacode', diacode)
@@ -36,7 +36,7 @@ def get_unit_amount(diacode):
     sql="""
         SELECT *
         FROM UNIT_AMOUNT
-        WHERE UA_DIACODE='&diacode'
+        WHERE UA_DIACODE=upper('&diacode')
         """
             
     sql=sql.replace('&diacode', diacode)
