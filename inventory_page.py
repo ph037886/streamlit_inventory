@@ -36,12 +36,6 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     with st.spinner("Wait for it...", show_time=True):
         time.sleep(2)
 
-def auto_complete_diacode_and_engname():
-    df=sqlite_control.get_all_diacode_and_engname()
-    diacode_list=df['DA_DIACODE'].tolist()
-    engname_list=df['DA_EGNAME'].tolist()
-    return diacode_list+engname_list
-
 def get_need_inventory_from_keyword(keyword):
     need_inventory=sqlite_control.get_his_info_use_diacode(keyword)
     if need_inventory.empty==False:
@@ -58,7 +52,7 @@ st.header('盤點頁面')
 
 keyword = st.selectbox(
     '輸入醫令碼或英文商品名：',
-    auto_complete_diacode_and_engname(),
+    sqlite_control.auto_complete_diacode_and_engname(),
     key='keyword',
     on_change=reset_inventory_amounts,
     accept_new_options=False,

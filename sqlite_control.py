@@ -76,3 +76,9 @@ def get_all_diacode_and_engname():
     
     df= pd.read_sql(sql, sqlite_link())
     return df
+
+def auto_complete_diacode_and_engname():
+    df=get_all_diacode_and_engname()
+    diacode_list=df['DA_DIACODE'].tolist()
+    engname_list=df['DA_EGNAME'].tolist()
+    return diacode_list+engname_list
