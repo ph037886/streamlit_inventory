@@ -43,3 +43,12 @@ def get_unit_amount(diacode):
     
     df= pd.read_sql(sql, sqlite_link())
     return df
+
+def get_all_inventory_record():
+    sql="""
+        SELECT *
+        FROM INVENTORY_RECORD
+        """
+    
+    df= pd.read_sql(sql, sqlite_link())
+    return df

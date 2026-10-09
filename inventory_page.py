@@ -34,7 +34,9 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     conn.commit()
     conn.close()
     with st.spinner("Wait for it...", show_time=True):
-        time.sleep(5)
+        time.sleep(2)
+
+st.header('盤點頁面')
 
 keyword = st.text_input(
     '輸入關鍵字：',
@@ -85,3 +87,8 @@ else:
     sum_amount = count_sum_amount(result_list, df_unit_amount)
     result_container.subheader(f'總量：{sum_amount}')
     result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, user_id,))
+    
+record_container=st.container()
+record_container.subheader('歷史紀錄')
+df_record=sqlite_control.get_all_inventory_record()
+record_container.dataframe(df_record)
