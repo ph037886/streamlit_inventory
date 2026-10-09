@@ -5,7 +5,7 @@ def sqlite_link():
     conn = sqlite3.connect('inventory.db')
     return conn
 
-def get_his_info(diacode): #取得藥品基本資料
+def get_his_info_use_diacode(diacode): #取得藥品基本資料
     sql="""
     SELECT DA_DIACODE
     , DA_EGNAME
@@ -16,6 +16,21 @@ def get_his_info(diacode): #取得藥品基本資料
     """
     
     sql=sql.replace('&diacode', diacode)
+    
+    df= pd.read_sql(sql, sqlite_link())
+    return df
+
+def get_his_info_use_engname(engname): #取得藥品基本資料
+    sql="""
+    SELECT DA_DIACODE
+    , DA_EGNAME
+    , DA_CHNAME
+    , DA_CNAME
+    FROM FROM_HIS
+    WHERE DA_EGNAME=upper('&engname')
+    """
+    
+    sql=sql.replace('&engname', engname)
     
     df= pd.read_sql(sql, sqlite_link())
     return df
@@ -47,7 +62,16 @@ def get_unit_amount(diacode):
 def get_all_inventory_record():
     sql="""
         SELECT *
-        FROM INVENTORY_RECORD
+        FROM SUM_WITH_UNIT
+        """
+    
+    df= pd.read_sql(sql, sqlite_link())
+    return df
+
+def get_all_diacode_and_engname():
+    sql="""
+        SELECT DA_DIACODE, DA_EGNAME
+        FROM FROM_HIS
         """
     
     df= pd.read_sql(sql, sqlite_link())

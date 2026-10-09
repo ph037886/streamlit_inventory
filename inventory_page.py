@@ -36,17 +36,37 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     with st.spinner("Wait for it...", show_time=True):
         time.sleep(2)
 
+def auto_complete_diacode_and_engname():
+    df=sqlite_control.get_all_diacode_and_engname()
+    diacode_list=df['DA_DIACODE'].tolist()
+    engname_list=df['DA_EGNAME'].tolist()
+    return diacode_list+engname_list
+
+def get_need_inventory_from_keyword(keyword):
+    need_inventory=sqlite_control.get_his_info_use_diacode(keyword)
+    if need_inventory.empty==False:
+        return need_inventory
+    else:
+        need_inventory=sqlite_control.get_his_info_use_engname(keyword)
+        return need_inventory
+
+
+#以下開始streamlit網頁介面
+
+
 st.header('盤點頁面')
 
-keyword = st.text_input(
-    '輸入關鍵字：',
+keyword = st.selectbox(
+    '輸入醫令碼或英文商品名：',
+    auto_complete_diacode_and_engname(),
     key='keyword',
     on_change=reset_inventory_amounts,
+    accept_new_options=False,
 )
 
 user_id='test'
 
-need_inventory=sqlite_control.get_his_info(keyword)
+need_inventory=get_need_inventory_from_keyword(keyword)
 
 if need_inventory.empty==True:
     result_container=st.container()
@@ -89,6 +109,3 @@ else:
     result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, user_id,))
     
 record_container=st.container()
-record_container.subheader('歷史紀錄')
-df_record=sqlite_control.get_all_inventory_record()
-record_container.dataframe(df_record)
