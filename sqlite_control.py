@@ -82,3 +82,11 @@ def auto_complete_diacode_and_engname():
     diacode_list=df['DA_DIACODE'].tolist()
     engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list
+
+def get_need_inventory_from_keyword(keyword):
+    need_inventory=get_his_info_use_diacode(keyword)
+    if need_inventory.empty==False:
+        return need_inventory
+    else:
+        need_inventory=get_his_info_use_engname(keyword)
+        return need_inventory

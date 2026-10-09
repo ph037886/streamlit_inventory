@@ -36,14 +36,6 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     with st.spinner("Wait for it...", show_time=True):
         time.sleep(2)
 
-def get_need_inventory_from_keyword(keyword):
-    need_inventory=sqlite_control.get_his_info_use_diacode(keyword)
-    if need_inventory.empty==False:
-        return need_inventory
-    else:
-        need_inventory=sqlite_control.get_his_info_use_engname(keyword)
-        return need_inventory
-
 
 #以下開始streamlit網頁介面
 
@@ -60,7 +52,7 @@ keyword = st.selectbox(
 
 user_id='test'
 
-need_inventory=get_need_inventory_from_keyword(keyword)
+need_inventory=sqlite_control.get_need_inventory_from_keyword(keyword)
 
 if need_inventory.empty==True:
     result_container=st.container()
