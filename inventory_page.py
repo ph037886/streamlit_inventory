@@ -21,6 +21,9 @@ def count_sum_amount(result_list, df_unit_amount):
     return sum_amount
 
 def record_inventory_amounts(diacode, site, result_list, user_id):
+    if site==None:
+        result_container.error('請選擇櫃位。')
+        return
     conn = sqlite_control.sqlite_link()
     cursor = conn.cursor()
     
@@ -69,8 +72,11 @@ else:
     #叫出櫃位
     df_site=sqlite_control.get_realworld_site(diacode)
     site_list=df_site['RS_SITE'].tolist()
-    site=result_container.pills(
-        '請選擇櫃位：', site_list)
+    if len(site_list) == 1:
+        site = result_container.pills('請選擇櫃位：', site_list, default=site_list[0])
+    else:
+        site=result_container.pills(
+            '請選擇櫃位：', site_list)
     
     #叫出排裝設定
     df_unit_amount=sqlite_control.get_unit_amount(diacode)
