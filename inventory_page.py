@@ -40,17 +40,32 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
         time.sleep(2)
 
 
-#以下開始streamlit網頁介面
 
+
+#以下開始streamlit網頁介面
 
 st.header('盤點頁面')
 
+diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname()
+
+
+
+#url參數：醫令碼
+if 'diacode' in st.query_params and st.query_params['diacode'] is not None:
+    if st.query_params['diacode'].upper() in diacode_and_engname_lsit:
+        keyword_index=diacode_and_engname_lsit.index(st.query_params['diacode'].upper())
+    else:
+        keyword_index=0
+else:
+    keyword_index=0
+    
 keyword = st.selectbox(
     '輸入醫令碼或英文商品名：',
-    sqlite_control.auto_complete_diacode_and_engname(),
-    key='keyword',
+    diacode_and_engname_lsit,
+    key='keyword_selectbox',
     on_change=reset_inventory_amounts,
     accept_new_options=False,
+    index=keyword_index,
 )
 
 user_id='test'
@@ -72,11 +87,22 @@ else:
     #叫出櫃位
     df_site=sqlite_control.get_realworld_site(diacode)
     site_list=df_site['RS_SITE'].tolist()
+    
+    #url參數：櫃位
+    if 'site' in st.query_params and st.query_params['site'] is not None:
+        if st.query_params['site'] in site_list:
+            site_index=site_list.index(st.query_params['site'])
+            default_site=site_list[site_index]
+        else:
+            default_site=site_list[0]
+    else:
+        default_site=site_list[0]
+    
     if len(site_list) == 1:
-        site = result_container.pills('請選擇櫃位：', site_list, default=site_list[0])
+        site = result_container.pills('請選擇櫃位：', site_list, default=default_site)
     else:
         site=result_container.pills(
-            '請選擇櫃位：', site_list)
+            '請選擇櫃位：', site_list, default=default_site)
     
     #叫出排裝設定
     df_unit_amount=sqlite_control.get_unit_amount(diacode)
