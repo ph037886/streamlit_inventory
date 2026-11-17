@@ -11,6 +11,7 @@ def get_his_info_use_diacode(diacode): #取得藥品基本資料
     , DA_EGNAME
     , DA_CHNAME
     , DA_CNAME
+    , DA_SITE
     FROM FROM_HIS
     WHERE DA_DIACODE=upper('&diacode')
     """
@@ -26,6 +27,7 @@ def get_his_info_use_engname(engname): #取得藥品基本資料
     , DA_EGNAME
     , DA_CHNAME
     , DA_CNAME
+    , DA_SITE
     FROM FROM_HIS
     WHERE DA_EGNAME=upper('&engname')
     """

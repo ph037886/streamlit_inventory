@@ -86,7 +86,11 @@ else:
     
     #叫出櫃位
     df_site=sqlite_control.get_realworld_site(diacode)
-    site_list=df_site['RS_SITE'].tolist()
+    if df_site.empty==True:
+        result_container.write('此醫令碼尚未設定櫃位，請先至「盤點設定」頁面設定櫃位，或先使用HIS櫃位。')
+        site_list=need_inventory['DA_SITE'].tolist()
+    else:
+        site_list=df_site['RS_SITE'].tolist()
     
     #url參數：櫃位
     if 'site' in st.query_params and st.query_params['site'] is not None:
