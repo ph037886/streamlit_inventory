@@ -22,3 +22,19 @@ if uploaded_file is not None:
 
     df = pd.read_csv(uploaded_file, encoding=encoding_type)
     st.write(df)
+    if st.button("確認匯入"):
+        # 將資料寫入 SQLite 資料庫
+        import sqlite3
+        conn = sqlite3.connect("inventory.db")
+        try:
+            if retain_old_data:
+                # 保留舊資料，直接將新資料附加到現有資料後面
+                df.to_sql("FROM_HIS", conn, if_exists="append", index=False)
+            else:
+                # 不保留舊資料，先刪除現有資料，再將新資料寫入
+                df.to_sql("FROM_HIS", conn, if_exists="replace", index=False)
+            conn.close()
+            st.success("資料已上傳成功！")
+        except Exception as e:
+            st.error(f"資料上傳失敗：{e}")
+        
