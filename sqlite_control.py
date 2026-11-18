@@ -191,6 +191,10 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
             "DA_CHNAME",
             "DA_CNAME",
             "DA_SITE",
+        ),
+        "need_inventory": (
+            "NI_DIACODE",
+            "NI_EVENT",
         )
     }
 
