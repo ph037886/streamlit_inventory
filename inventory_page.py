@@ -126,8 +126,9 @@ else:
             key=f'input_amount_{diacode}_{unit}', #增加key，讓前面的reset_inventory_amounts()可以歸零
         )
         result_list.append((input_amount, unit))
-    sum_amount = count_sum_amount(result_list, df_unit_amount)
-    result_container.subheader(f'總量：{sum_amount}')
+    #計算總量會因為線上版連線問題，使用體驗有先問題，先停掉
+    #sum_amount = count_sum_amount(result_list, df_unit_amount)
+    #result_container.subheader(f'總量：{sum_amount}')
     result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, user_id,))
     
 record_container=st.container()
