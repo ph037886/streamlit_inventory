@@ -29,10 +29,10 @@ if uploaded_file is not None:
         try:
             if retain_old_data:
                 # 保留舊資料，直接將新資料附加到現有資料後面
-                df.to_sql("FROM_HIS", conn, if_exists="append", index=False)
+                df.to_sql("from_his", conn, if_exists="append", index=False)
             else:
                 # 不保留舊資料，先刪除現有資料，再將新資料寫入
-                df.to_sql("FROM_HIS", conn, if_exists="replace", index=False)
+                df.to_sql("from_his", conn, if_exists="replace", index=False)
             conn.close()
             st.success("資料已上傳成功！")
         except Exception as e:

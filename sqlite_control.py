@@ -6,6 +6,17 @@ def postgres_link():
     return psycopg.connect(
         st.secrets["DATABASE_URL"]
     )
+    
+def read_query(sql, params=None):
+    with postgres_link() as conn:
+        df = pd.read_sql_query(
+            sql,
+            conn,
+            params=params,
+        )
+
+    df.columns = [str(column).upper() for column in df.columns]
+    return df
 
 def get_his_info_use_diacode(diacode): #取得藥品基本資料
     sql="""
@@ -17,7 +28,7 @@ def get_his_info_use_diacode(diacode): #取得藥品基本資料
     FROM FROM_HIS
     WHERE UPPER(DA_DIACODE)=UPPER(%s)
     """
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn, params=(diacode,))
     return df
 
@@ -32,7 +43,7 @@ def get_his_info_use_engname(engname): #取得藥品基本資料
     WHERE UPPER(DA_EGNAME)=UPPER(%s)
     """
     
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn, params=(engname,))
     return df
 
@@ -43,7 +54,7 @@ def get_realworld_site(diacode):
         WHERE UPPER(RS_DIACODE)=UPPER(%s)
         """
     
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn, params=(diacode,))
     return df
     
@@ -53,7 +64,7 @@ def get_unit_amount(diacode):
         FROM UNIT_AMOUNT
         WHERE UPPER(UA_DIACODE)=UPPER(%s)
         """
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn, params=(diacode,))
     return df
 
@@ -93,7 +104,7 @@ def save_realworld_site_and_unit_amount(
         for _, row in unit_rows.iterrows()
     ]
 
-    with postgres_link() as conn:
+    with read_query() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
@@ -134,7 +145,7 @@ def get_all_inventory_record():
         SELECT *
         FROM SUM_WITH_UNIT
         """
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn)
     return df
 
@@ -144,14 +155,14 @@ def get_all_diacode_and_engname():
         FROM FROM_HIS
         """
     
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn)
     return df
 
 def auto_complete_diacode_and_engname():
     df=get_all_diacode_and_engname()
-    diacode_list=df['da_diacode'].tolist()
-    engname_list=df['da_egname'].tolist()
+    diacode_list=df['DA_DIACODE'].tolist()
+    engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list
 
 def get_need_inventory_from_keyword(keyword):
@@ -169,12 +180,12 @@ def get_need_inventory_diacode_and_engname():
         LEFT JOIN FROM_HIS ON NEED_INVENTORY.NI_DIACODE=FROM_HIS.DA_DIACODE
         """
     
-    with postgres_link() as conn:
+    with read_query() as conn:
         df= pd.read_sql_query(sql, conn)
     return df
 
 def auto_complete_diacode_and_engname_for_need_inventory():
     df=get_need_inventory_diacode_and_engname()
-    diacode_list=df['da_diacode'].tolist()
-    engname_list=df['da_egname'].tolist()
+    diacode_list=df['DA_DIACODE'].tolist()
+    engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list

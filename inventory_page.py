@@ -30,7 +30,7 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     for input_amount, unit in result_list:
         if input_amount > 0:
             cursor.execute(
-                "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD) VALUES (%s, %s, %s, %s, %s)",
                 (user_id, diacode, site, unit, input_amount)
             )
     
