@@ -182,15 +182,60 @@ def auto_complete_diacode_and_engname_for_need_inventory():
     diacode_list=df['DA_DIACODE'].tolist()
     engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list
-
+    
 def upload_from_his_or_inventory(df, table_name, retain_old_data):
+    allowed_tables = {
+        "from_his": (
+            "DA_DIACODE",
+            "DA_EGNAME",
+            "DA_CHNAME",
+            "DA_CNAME",
+            "DA_SITE",
+        )
+    }
+
+    if table_name not in allowed_tables:
+        return False, "不支援的匯入資料表。"
+
+    columns = allowed_tables[table_name]
+
+    missing_columns = [
+        column for column in columns
+        if column not in df.columns
+    ]
+    if missing_columns:
+        return False, f"CSV 缺少欄位：{missing_columns}"
+
     try:
-        if retain_old_data==True:
-            with postgres_link() as conn:
-                df.to_sql(table_name, conn, if_exists="append", index=False)
-        else:
-            with postgres_link() as conn:
-                df.to_sql(table_name, conn, if_exists="delete_rows", index=False)
+        values = [
+            tuple(row[column] for column in columns)
+            for _, row in df.iterrows()
+        ]
+
+        column_names = ", ".join(columns)
+        placeholders = ", ".join(["%s"] * len(columns))
+
+        with postgres_link() as conn:
+            with conn.cursor() as cursor:
+                if not retain_old_data:
+                    cursor.execute(
+                        f"DELETE FROM {table_name}"
+                    )
+
+                cursor.executemany(
+                    f"""
+                    INSERT INTO {table_name} ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (DA_DIACODE) DO UPDATE SET
+                        DA_EGNAME = EXCLUDED.DA_EGNAME,
+                        DA_CHNAME = EXCLUDED.DA_CHNAME,
+                        DA_CNAME = EXCLUDED.DA_CNAME,
+                        DA_SITE = EXCLUDED.DA_SITE
+                    """,
+                    values,
+                )
+
         return True, "資料已上傳成功！"
-    except Exception as e:
-        return False, f"資料上傳失敗：{e}"
+
+    except Exception as error:
+        return False, f"資料上傳失敗：{error}"
