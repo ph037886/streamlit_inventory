@@ -46,7 +46,7 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
 
 st.header('盤點頁面')
 
-diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname()
+diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory()
 
 
 
