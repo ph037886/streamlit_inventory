@@ -182,3 +182,13 @@ def auto_complete_diacode_and_engname_for_need_inventory():
     diacode_list=df['DA_DIACODE'].tolist()
     engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list
+
+def upload_from_his_or_inventory(df, table_name, retain_old_data):
+    try:
+        if retain_old_data==True:
+            df.to_sql(table_name, conn, if_exists="append", index=False)
+        else:
+            df.to_sql(table_name, conn, if_exists="delete_rows", index=False)
+        return True, "資料已上傳成功！"
+    except Exception as e:
+        return False, f"資料上傳失敗：{e}"
