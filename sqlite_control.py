@@ -146,7 +146,7 @@ def get_all_inventory_record():
         FROM SUM_WITH_UNIT
         """
     with read_query() as conn:
-        df= pd.read_sql_query(sql, conn)
+        df= pd.read_sql_query(sql)
     return df
 
 def get_all_diacode_and_engname():
@@ -156,7 +156,7 @@ def get_all_diacode_and_engname():
         """
     
     with read_query() as conn:
-        df= pd.read_sql_query(sql, conn)
+        df= pd.read_sql_query(sql)
     return df
 
 def auto_complete_diacode_and_engname():
@@ -181,7 +181,7 @@ def get_need_inventory_diacode_and_engname():
         """
     
     with read_query() as conn:
-        df= pd.read_sql_query(sql, conn)
+        df= pd.read_sql_query(sql)
     return df
 
 def auto_complete_diacode_and_engname_for_need_inventory():
