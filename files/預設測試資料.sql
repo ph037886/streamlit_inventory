@@ -39,9 +39,15 @@ INSERT INTO UNIT_AMOUNT (UA_DIACODE, UA_UNIT, UA_AMOUNT) VALUES
     ('OXAN2', '排', '10'),
     ('IBROS', '盒', '10'),
     ('ISMOF', '箱', '4');
+    
+INSERT INTO INVENTORY_EVENT (IE_NAME, IE_START) VALUES
+    ('2026/11/18測試盤點', '2026-11-18 19:00:00');
 
-INSERT INTO ('', '') VALUES
-    (),
-
-INSERT INTO ('', '') VALUES
-    (),
+INSERT INTO NEED_INVENTORY (NI_DIACODE, NI_EVENT) VALUES
+    ('OCRES', 1),
+    ('OXAN2', 1),
+    ('ENEOM', 1),
+    ('EONSD', 1),
+    ('IBROS', 1),
+    ('ISMOF', 1),
+    ('IDIPE', 1);

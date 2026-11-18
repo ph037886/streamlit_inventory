@@ -150,8 +150,8 @@ def get_all_diacode_and_engname():
 
 def auto_complete_diacode_and_engname():
     df=get_all_diacode_and_engname()
-    diacode_list=df['DA_DIACODE'].tolist()
-    engname_list=df['DA_EGNAME'].tolist()
+    diacode_list=df['da_diacode'].tolist()
+    engname_list=df['da_egname'].tolist()
     return diacode_list+engname_list
 
 def get_need_inventory_from_keyword(keyword):
@@ -175,6 +175,6 @@ def get_need_inventory_diacode_and_engname():
 
 def auto_complete_diacode_and_engname_for_need_inventory():
     df=get_need_inventory_diacode_and_engname()
-    diacode_list=df['DA_DIACODE'].tolist()
-    engname_list=df['DA_EGNAME'].tolist()
+    diacode_list=df['da_diacode'].tolist()
+    engname_list=df['da_egname'].tolist()
     return diacode_list+engname_list
