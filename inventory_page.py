@@ -24,7 +24,7 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     if site==None:
         result_container.error('請選擇櫃位。')
         return
-    conn = sqlite_control.sqlite_link()
+    conn = sqlite_control.postgres_link()
     cursor = conn.cursor()
     
     for input_amount, unit in result_list:
