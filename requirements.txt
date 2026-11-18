@@ -1,4 +1,4 @@
 chardet==7.6.0
-pandas==2.3.3
+pandas==3.0.0
 streamlit==1.55.0
 psycopg[binary]
