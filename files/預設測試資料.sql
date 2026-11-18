@@ -1,4 +1,4 @@
-INSERT INTO FROM_HIS ('DA_DIACODE', 'DA_EGNAME', 'DA_CHNAME', 'DA_CNAME', 'DA_SITE') VALUES 
+INSERT INTO FROM_HIS (DA_DIACODE, DA_EGNAME, DA_CHNAME, DA_CNAME, DA_SITE) VALUES 
     --口服
     ('OCRES', 'CRESTOR 10MG TAB', 'rosuvastatin calcium 10mg', '冠脂妥膜衣錠 10毫克', '1A4'),
     ('OXAN2', 'XANAX 0.25 MG TAB (管4)', 'alprazolam 0.25mg', '贊安諾錠 0.25毫克', '1Q6'),
@@ -10,7 +10,7 @@ INSERT INTO FROM_HIS ('DA_DIACODE', 'DA_EGNAME', 'DA_CHNAME', 'DA_CNAME', 'DA_SI
     ('ISMOF', '★ SMOFKABIVEN 1448ML INFUSION', 'glucose +sodium acetate+kcl+cacl+soybean oil+fish-oil...', '斯莫克必恩周邊靜脈輸注液', '點滴'),
     ('IDIPE', '(舊) DIPHENHYDRAMINE 30MG INJ', 'diphenhydramine 30mg/ml 1ml', '鹽酸二苯胺明注射液', '甲8');
 
-INSERT INTO REALWORLD_SITE ('RS_DIACODE', 'RS_SITE', 'RS_WORKTOP') VALUES
+INSERT INTO REALWORLD_SITE (RS_DIACODE, RS_SITE, RS_WORKTOP) VALUES
     --口服
     ('OCRES', '1A4-調1', '調1'),
     ('OCRES', '1A4-調2', '調2'),
@@ -33,7 +33,7 @@ INSERT INTO REALWORLD_SITE ('RS_DIACODE', 'RS_SITE', 'RS_WORKTOP') VALUES
     ('IDIPE', '門診針劑', '門診中間台');
 
 
-INSERT INTO UNIT_AMOUNT ('UA_DIACODE', 'UA_UNIT', 'UA_AMOUNT') VALUES
+INSERT INTO UNIT_AMOUNT (UA_DIACODE, UA_UNIT, UA_AMOUNT) VALUES
     ('OCRES', '排', '14'),
     ('OCRES', '盒', '28'),
     ('OXAN2', '排', '10'),

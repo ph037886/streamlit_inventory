@@ -1,35 +1,56 @@
-CREATE TABLE FROM_HIS ( /*從HIS匯入的資料，理論上是這次盤點的品項表*/
-    DA_DIACODE CHAR(8) NOT NULL, /*醫令碼*/
+CREATE TABLE FROM_HIS ( /*從HIS匯入的資料*/
+    DA_DIACODE VARCHAR(8) PRIMARY KEY, /*醫令碼*/
     DA_EGNAME TEXT NOT NULL, /*商品名*/
     DA_CHNAME TEXT NOT NULL, /*學名*/
     DA_CNAME TEXT, /*中文名*/
-    DA_SITE CHAR(5) /*櫃位*/
-    );
+    DA_SITE VARCHAR(5) /*櫃位，來自MD_SITE，配合統一開頭改用DA_SITE*/
+);
 
 CREATE TABLE REALWORLD_SITE ( /*真實櫃位*/
-    RS_DIACODE CHAR(8) NOT NULL, /*醫令碼，和真實櫃位連結*/
-    RS_SITE CHAR(10) NOT NULL, /*真實櫃位，可對應HIS內同櫃位，實際不同檯面，如：1A2-調1*/
-    RS_WORKTOP CHAR(10) NOT NULL /*分類，對應檯面，後續可計算檯面完成度，如：調1、住院針劑、小藥盒-呂睿騰*/
-    );
+    RS_DIACODE VARCHAR(8) NOT NULL /*醫令碼，和真實櫃位連結*/
+        REFERENCES FROM_HIS (DA_DIACODE),
+    RS_SITE VARCHAR(10) NOT NULL, /*真實櫃位，可對應HIS內同櫃位，實際不同檯面，如：1A2-調1*/
+    RS_WORKTOP VARCHAR(10) NOT NULL, /*分類，對應檯面，後續可計算檯面完成度，如：調1、住院針劑、小藥盒*/
+    PRIMARY KEY (RS_DIACODE, RS_SITE)
+);
 
 CREATE TABLE UNIT_AMOUNT ( /*單位數量*/
-    UA_DIACODE CHAR(8) NOT NULL, /*醫令碼*/
-    UA_UNIT CHAR(5) NOT NULL, /*單位，如：排、盒、包*/
-    UA_AMOUNT INTEGER NOT NULL /*單位數量，正整數，如：14、28*/
-    );
+    UA_DIACODE VARCHAR(8) NOT NULL /*醫令碼*/
+        REFERENCES FROM_HIS (DA_DIACODE),
+    UA_UNIT VARCHAR(5) NOT NULL, /*單位，如：排、盒、包*/
+    UA_AMOUNT INTEGER NOT NULL CHECK (UA_AMOUNT > 0),  /*單位數量，正整數，如：14、28*/
+    PRIMARY KEY (UA_DIACODE, UA_UNIT)
+);
 
 CREATE TABLE INVENTORY_RECORD ( /*盤點紀錄*/
-    IR_DIACODE CHAR(8) NOT NULL, /*醫令碼*/
-    IR_SITE CHAR(10) NOT NULL, /*真實櫃位，可對應HIS內同櫃位，實際不同檯面，如：1A2-調1*/
-    IR_UNIT CHAR(5) NOT NULL, /*單位，如：排、盒、包*/
-    IR_RECORD INTEGER, /*盤點量，從前端輸入進來的量*/
-    IR_USER CHAR(10) NOT NULL, /*盤點人，紀錄HIS帳號*/
-    IR_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP /*紀錄時間*/
-    
+    IR_ID BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, /*主鍵*/
+    IR_DIACODE VARCHAR(8) NOT NULL
+        REFERENCES FROM_HIS (DA_DIACODE), /*醫令碼*/
+    IR_SITE VARCHAR(10) NOT NULL, /*真實櫃位，可對應HIS內同櫃位，實際不同檯面，如：1A2-調1*/
+    IR_UNIT VARCHAR(5) NOT NULL, /*單位，如：排、盒、包*/
+    IR_RECORD INTEGER NOT NULL CHECK (IR_RECORD >= 0), /*盤點量，從前端輸入進來的量*/
+    IR_USER VARCHAR(10) NOT NULL, /*盤點人，紀錄HIS帳號*/
+    IR_TIME TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP /*紀錄時間*/
     /*
     備註：
     這邊是紀錄盤點資料從前端進來的資料，不做計算
     計算再用view去計算數目
     */
-    );
 
+);
+
+CREATE TABLE INVENTORY_EVENT ( /*盤點事件*/
+    IE_NO BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, /*主鍵*/
+    IE_NAME VARCHAR(20) NOT NULL, /*盤點事件名稱，如：2023-01-01 盤點、2023-02-01 盤點*/
+    IE_START TIMESTAMPTZ NOT NULL, /*開始日期*/
+    IE_END TIMESTAMPTZ /*結束時間，NULL表示尚未結束*/
+);
+
+CREATE TABLE NEED_INVENTORY ( /*本次須盤點的品項*/
+    NI_NO BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, /*主鍵*/
+    NI_DIACODE VARCHAR(8) NOT NULL /*醫令碼*/
+        REFERENCES FROM_HIS (DA_DIACODE),
+    NI_EVENT BIGINT NOT NULL
+        REFERENCES INVENTORY_EVENT (IE_NO), /*盤點事件，對應盤點事件表*/
+    UNIQUE (NI_EVENT, NI_DIACODE) /*同一個盤點事件，不能有重複的醫令碼*/
+);
