@@ -186,10 +186,10 @@ def auto_complete_diacode_and_engname_for_need_inventory():
 def upload_from_his_or_inventory(df, table_name, retain_old_data):
     try:
         if retain_old_data==True:
-            with read_query() as conn:
+            with postgres_link() as conn:
                 df.to_sql(table_name, conn, if_exists="append", index=False)
         else:
-            with read_query() as conn:
+            with postgres_link() as conn:
                 df.to_sql(table_name, conn, if_exists="delete_rows", index=False)
         return True, "資料已上傳成功！"
     except Exception as e:
