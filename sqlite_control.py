@@ -28,8 +28,7 @@ def get_his_info_use_diacode(diacode): #取得藥品基本資料
     FROM FROM_HIS
     WHERE UPPER(DA_DIACODE)=UPPER(%s)
     """
-    with read_query() as conn:
-        df= pd.read_sql_query(sql, conn, params=(diacode,))
+    df=read_query(sql, params=(diacode,))
     return df
 
 def get_his_info_use_engname(engname): #取得藥品基本資料
@@ -43,8 +42,7 @@ def get_his_info_use_engname(engname): #取得藥品基本資料
     WHERE UPPER(DA_EGNAME)=UPPER(%s)
     """
     
-    with read_query() as conn:
-        df= pd.read_sql_query(sql, conn, params=(engname,))
+    df=read_query(sql, params=(engname,))
     return df
 
 def get_realworld_site(diacode):
@@ -54,8 +52,7 @@ def get_realworld_site(diacode):
         WHERE UPPER(RS_DIACODE)=UPPER(%s)
         """
     
-    with read_query() as conn:
-        df= pd.read_sql_query(sql, conn, params=(diacode,))
+    df=read_query(sql, params=(diacode,))
     return df
     
 def get_unit_amount(diacode):
@@ -64,8 +61,7 @@ def get_unit_amount(diacode):
         FROM UNIT_AMOUNT
         WHERE UPPER(UA_DIACODE)=UPPER(%s)
         """
-    with read_query() as conn:
-        df= pd.read_sql_query(sql, conn, params=(diacode,))
+    df=read_query(sql, params=(diacode,))
     return df
 
 def save_realworld_site_and_unit_amount(
@@ -145,8 +141,7 @@ def get_all_inventory_record():
         SELECT *
         FROM SUM_WITH_UNIT
         """
-    with read_query() as conn:
-        df= pd.read_sql_query(sql)
+    df=read_query(sql)
     return df
 
 def get_all_diacode_and_engname():
@@ -155,8 +150,7 @@ def get_all_diacode_and_engname():
         FROM FROM_HIS
         """
     
-    with read_query() as conn:
-        df= pd.read_sql_query(sql)
+    df=read_query(sql)
     return df
 
 def auto_complete_diacode_and_engname():
@@ -180,8 +174,7 @@ def get_need_inventory_diacode_and_engname():
         LEFT JOIN FROM_HIS ON NEED_INVENTORY.NI_DIACODE=FROM_HIS.DA_DIACODE
         """
     
-    with read_query() as conn:
-        df= pd.read_sql_query(sql)
+    df=read_query(sql)
     return df
 
 def auto_complete_diacode_and_engname_for_need_inventory():
