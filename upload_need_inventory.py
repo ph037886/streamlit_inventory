@@ -33,7 +33,7 @@ if uploaded_file is not None:
                 st.success(message)
                 event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
                 df["NI_EVENT"] = event_no
-                is_success, message = sqlite_control.upload_from_his_or_inventory(df, "need_inventory", False)
+                is_success, message = sqlite_control.upload_from_his_or_inventory(df, "need_inventory", True)
                 if is_success:
                     st.success(message)
                 else:

@@ -31,6 +31,8 @@ CREATE TABLE INVENTORY_RECORD ( /*盤點紀錄*/
     IR_RECORD INTEGER NOT NULL CHECK (IR_RECORD >= 0), /*盤點量，從前端輸入進來的量*/
     IR_USER VARCHAR(10) NOT NULL, /*盤點人，紀錄HIS帳號*/
     IR_TIME TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP /*紀錄時間*/
+    IR_EVENT_NO BIGINT NOT NULL
+        REFERENCES INVENTORY_EVENT (IE_NO) /*盤點事件，對應盤點事件表*/
     /*
     備註：
     這邊是紀錄盤點資料從前端進來的資料，不做計算

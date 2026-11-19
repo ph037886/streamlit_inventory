@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite_control
 import time
+import pandas as pd
 
 def print_result(something):
     print(something)
@@ -20,35 +21,63 @@ def count_sum_amount(result_list, df_unit_amount):
             sum_amount+=input_amount*unit_amount
     return sum_amount
 
-def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id):
+def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id, inventory_event_name):
     if site==None:
         result_container.error('請選擇櫃位。')
         return
+    
+    event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
+    
     conn = sqlite_control.postgres_link()
     cursor = conn.cursor()
-    
     for input_amount, unit in result_list:
         if input_amount > 0:
             cursor.execute(
-                "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD) VALUES (%s, %s, %s, %s, %s)",
-                (user_id, diacode, site, unit, input_amount)
+                "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD, IR_EVENT_NO) VALUES (%s, %s, %s, %s, %s, %s)",
+                (user_id, diacode, site, unit, input_amount, event_no)
             )
     
-    conn.commit()
-    conn.close()
-    with st.spinner("Wait for it...", show_time=True):
-        time.sleep(2)
-    sum_amount = count_sum_amount(result_list, df_unit_amount)
-    temporary_message = st.empty()
-    temporary_message.write(f'排裝後總量：{sum_amount}')
-    time.sleep(5)
-    temporary_message.empty()
+            conn.commit()
+            conn.close()
+            with st.spinner("Wait for it...", show_time=True):
+                time.sleep(1)
+            sum_amount = count_sum_amount(result_list, df_unit_amount)
+            temporary_message = st.empty()
+            temporary_message.write(f'排裝後總量：{sum_amount}')
+            time.sleep(3)
+            temporary_message.empty()
+        else:
+            temporary_message = st.empty()
+            temporary_message.error(f'盤點數目為0不紀錄')
+            time.sleep(3)
+            temporary_message.empty()
 
 
 
 #以下開始streamlit網頁介面
 
 st.header('盤點頁面')
+
+#顯示盤點事件，並留下尚未停止，且開始日期大於今天的事件，讓使用者選擇，預設選擇第一個事件
+inventory_event_df=sqlite_control.get_all_inventory_event()
+#統一時區
+inventory_event_df["IE_START"] = pd.to_datetime(
+    inventory_event_df["IE_START"],
+    utc=True,
+)
+
+now = pd.Timestamp.now(tz="UTC")
+
+inventory_event_df = inventory_event_df[
+    inventory_event_df["IE_END"].isna()
+    & (inventory_event_df["IE_START"] <= now)
+]
+inventory_event_list=inventory_event_df['IE_NAME'].tolist()
+if len(inventory_event_list)==1:
+    disabled_type=True
+else:
+    disabled_type=False
+inventory_event_name=st.selectbox('請選擇盤點事件：', inventory_event_list, index=0, disabled=disabled_type)
 
 diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory()
 
@@ -62,7 +91,8 @@ if 'diacode' in st.query_params and st.query_params['diacode'] is not None:
         keyword_index=0
 else:
     keyword_index=0
-    
+
+
 keyword = st.selectbox(
     '輸入醫令碼或英文商品名：',
     diacode_and_engname_lsit,
@@ -133,6 +163,6 @@ else:
     #計算總量會因為線上版連線問題，使用體驗有先問題，先停掉
     #sum_amount = count_sum_amount(result_list, df_unit_amount)
     #result_container.subheader(f'總量：{sum_amount}')
-    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id,))
+    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id, inventory_event_name))
     
 record_container=st.container()

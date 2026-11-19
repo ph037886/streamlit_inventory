@@ -172,7 +172,8 @@ def get_need_inventory_diacode_and_engname():
     sql="""
         SELECT DA_DIACODE, DA_EGNAME
         FROM NEED_INVENTORY
-        LEFT JOIN FROM_HIS ON NEED_INVENTORY.NI_DIACODE=FROM_HIS.DA_DIACODE
+        LEFT JOIN FROM_HIS 
+            ON NEED_INVENTORY.NI_DIACODE=FROM_HIS.DA_DIACODE
         """
     
     df=read_query(sql)
@@ -274,7 +275,7 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
     except Exception as error:
         return False, f"資料上傳失敗：{error}"
     
-def get_need_inventory_record():
+def get_need_inventory_record(event_name: str | None = None) -> pd.DataFrame:
     sql="""
           /*查詢本次盤點品項_依醫令碼區分*/
         SELECT NEED_INVENTORY.NI_DIACODE "醫令碼"
@@ -300,6 +301,8 @@ def get_need_inventory_record():
         LEFT JOIN UNIT_AMOUNT 
             ON (UNIT_AMOUNT.UA_DIACODE=INVENTORY_RECORD.IR_DIACODE 
             AND UNIT_AMOUNT.UA_UNIT=INVENTORY_RECORD.IR_UNIT)
+        
+        WHERE INVENTORY_EVENT.IE_NAME = %s
             
         GROUP BY NEED_INVENTORY.NI_DIACODE
         , FROM_HIS.DA_EGNAME
@@ -308,13 +311,14 @@ def get_need_inventory_record():
         , INVENTORY_EVENT.IE_NAME 
         
         ORDER BY NEED_INVENTORY.NI_DIACODE, REALWORLD_SITE.RS_SITE"""
-    df=read_query(sql)
+    df=read_query(sql, params=(event_name,))
     return df
 
 def get_all_inventory_event():
     sql="""
         SELECT *
         FROM INVENTORY_EVENT
+        ORDER BY IE_START DESC
         """
     df=read_query(sql)
     return df
@@ -342,6 +346,7 @@ def get_inventory_event_by_name(event_name):
         SELECT *
         FROM INVENTORY_EVENT
         WHERE IE_NAME = %s
+        ORDER BY IE_START DESC
         """
     df=read_query(sql, params=(event_name,))
     return df
