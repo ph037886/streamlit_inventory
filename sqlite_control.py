@@ -249,7 +249,7 @@ def get_need_inventory_record():
           /*查詢本次盤點品項_依醫令碼區分*/
         SELECT NEED_INVENTORY.NI_DIACODE "醫令碼"
         , FROM_HIS.DA_EGNAME "商品名"
-        , SUM(INVENTORY_RECORD.IR_RECORD * COALESCE(UNIT_AMOUNT.UA_AMOUNT, 1)) AS "排裝後總量"
+        , SUM(INVENTORY_RECORD.IR_RECORD * COALESCE(UNIT_AMOUNT.UA_AMOUNT, 1)) AS "總量"
         , REALWORLD_SITE.RS_SITE AS "真實櫃位"
         , REALWORLD_SITE.RS_WORKTOP AS "檯面"
         , INVENTORY_EVENT.IE_NAME AS "盤點事件"
