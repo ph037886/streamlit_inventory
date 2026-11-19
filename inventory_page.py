@@ -20,7 +20,7 @@ def count_sum_amount(result_list, df_unit_amount):
             sum_amount+=input_amount*unit_amount
     return sum_amount
 
-def record_inventory_amounts(diacode, site, result_list, user_id):
+def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id):
     if site==None:
         result_container.error('請選擇櫃位。')
         return
@@ -38,7 +38,11 @@ def record_inventory_amounts(diacode, site, result_list, user_id):
     conn.close()
     with st.spinner("Wait for it...", show_time=True):
         time.sleep(2)
-
+    sum_amount = count_sum_amount(result_list, df_unit_amount)
+    temporary_message = st.empty()
+    temporary_message.write(f'排裝後總量：{sum_amount}')
+    time.sleep(5)
+    temporary_message.empty()
 
 
 
@@ -129,6 +133,6 @@ else:
     #計算總量會因為線上版連線問題，使用體驗有先問題，先停掉
     #sum_amount = count_sum_amount(result_list, df_unit_amount)
     #result_container.subheader(f'總量：{sum_amount}')
-    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, user_id,))
+    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id,))
     
 record_container=st.container()

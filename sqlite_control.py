@@ -280,3 +280,11 @@ def get_need_inventory_record():
         ORDER BY NEED_INVENTORY.NI_DIACODE, REALWORLD_SITE.RS_SITE"""
     df=read_query(sql)
     return df
+
+def get_all_inventory_event():
+    sql="""
+        SELECT *
+        FROM INVENTORY_EVENT
+        """
+    df=read_query(sql)
+    return df
