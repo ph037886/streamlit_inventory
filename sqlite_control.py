@@ -246,12 +246,10 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
     
 def get_need_inventory_record():
     sql="""
+          /*查詢本次盤點品項_依醫令碼區分*/
         SELECT NEED_INVENTORY.NI_DIACODE "醫令碼"
         , FROM_HIS.DA_EGNAME "商品名"
-        , SUM(INVENTORY_RECORD.IR_RECORD) AS "盤點量"
-        , COALESCE(UNIT_AMOUNT.UA_UNIT, '散裝') AS "排裝"
-        , COALESCE(UNIT_AMOUNT.UA_AMOUNT, 1) AS "單位排裝個數"
-        , SUM(INVENTORY_RECORD.IR_RECORD) * COALESCE(UNIT_AMOUNT.UA_AMOUNT, 1) AS "各排裝總量"
+        , SUM(INVENTORY_RECORD.IR_RECORD * COALESCE(UNIT_AMOUNT.UA_AMOUNT, 1)) AS "排裝後總量"
         ,INVENTORY_RECORD.IR_SITE AS "真實櫃位"
         , INVENTORY_EVENT.IE_NAME AS "盤點事件"
         FROM NEED_INVENTORY
@@ -262,10 +260,8 @@ def get_need_inventory_record():
 
         GROUP BY NEED_INVENTORY.NI_DIACODE
         , FROM_HIS.DA_EGNAME
-        , INVENTORY_RECORD.IR_UNIT
-        , UNIT_AMOUNT.UA_UNIT
-        , UNIT_AMOUNT.UA_AMOUNT
         , INVENTORY_RECORD.IR_SITE 
-        , INVENTORY_EVENT.IE_NAME ;"""
+        , INVENTORY_EVENT.IE_NAME 
+        ORDER BY NEED_INVENTORY.NI_DIACODE, INVENTORY_RECORD.IR_SITE ;"""
     df=read_query(sql)
     return df
