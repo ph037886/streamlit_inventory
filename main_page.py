@@ -7,7 +7,7 @@ pages = [
 	st.Page('need_inventory_record.py', title='盤點結果'),
 	st.Page('unit_amount_and_site_edit.py', title='櫃位及排裝設定'),
  	#st.Page('upload_from_his.py', title='上傳品項表'),
-	#st.Page('upload_data.py', title='上傳盤點清單'),
+	st.Page('upload_need_inventory.py', title='上傳盤點清單'),
 ]
 
 selected_page = st.navigation(pages, position='sidebar')

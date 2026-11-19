@@ -1,6 +1,7 @@
 import psycopg
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 def postgres_link():
     return psycopg.connect(
@@ -185,23 +186,42 @@ def auto_complete_diacode_and_engname_for_need_inventory():
     
 def upload_from_his_or_inventory(df, table_name, retain_old_data):
     allowed_tables = {
-        "from_his": (
-            "DA_DIACODE",
-            "DA_EGNAME",
-            "DA_CHNAME",
-            "DA_CNAME",
-            "DA_SITE",
-        ),
-        "need_inventory": (
-            "NI_DIACODE",
-            "NI_EVENT",
-        )
+        "from_his": {
+            "columns": (
+                "DA_DIACODE",
+                "DA_EGNAME",
+                "DA_CHNAME",
+                "DA_CNAME",
+                "DA_SITE",
+            ),
+            "conflict_columns": ("DA_DIACODE",),
+            "update_columns": (
+                "DA_EGNAME",
+                "DA_CHNAME",
+                "DA_CNAME",
+                "DA_SITE",
+            ),
+        },
+        "need_inventory": {
+            "columns": (
+                "NI_DIACODE",
+                "NI_EVENT",
+            ),
+            "conflict_columns": (
+                "NI_EVENT",
+                "NI_DIACODE",
+            ),
+            "update_columns": (),  # 重複資料不需要更新欄位
+        },
     }
 
     if table_name not in allowed_tables:
         return False, "不支援的匯入資料表。"
 
-    columns = allowed_tables[table_name]
+    table_config = allowed_tables[table_name]
+    columns = table_config["columns"]
+    conflict_columns = table_config["conflict_columns"]
+    update_columns = table_config["update_columns"]
 
     missing_columns = [
         column for column in columns
@@ -209,12 +229,29 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
     ]
     if missing_columns:
         return False, f"CSV 缺少欄位：{missing_columns}"
-
+    values = [
+        tuple(
+            None if pd.isna(row[column]) else row[column]
+            for column in columns
+        )
+        for _, row in df.iterrows()
+    ]
     try:
-        values = [
-            tuple(row[column] for column in columns)
-            for _, row in df.iterrows()
-        ]
+        conflict_target = ", ".join(conflict_columns)
+
+        if update_columns:
+            update_clause = ", ".join(
+                f"{column} = EXCLUDED.{column}"
+                for column in update_columns
+            )
+            on_conflict_sql = (
+                f"ON CONFLICT ({conflict_target}) "
+                f"DO UPDATE SET {update_clause}"
+            )
+        else:
+            on_conflict_sql = (
+                f"ON CONFLICT ({conflict_target}) DO NOTHING"
+            )
 
         column_names = ", ".join(columns)
         placeholders = ", ".join(["%s"] * len(columns))
@@ -222,19 +259,12 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
         with postgres_link() as conn:
             with conn.cursor() as cursor:
                 if not retain_old_data:
-                    cursor.execute(
-                        f"DELETE FROM {table_name}"
-                    )
-
+                    cursor.execute(f"DELETE FROM {table_name}")
                 cursor.executemany(
                     f"""
                     INSERT INTO {table_name} ({column_names})
                     VALUES ({placeholders})
-                    ON CONFLICT (DA_DIACODE) DO UPDATE SET
-                        DA_EGNAME = EXCLUDED.DA_EGNAME,
-                        DA_CHNAME = EXCLUDED.DA_CHNAME,
-                        DA_CNAME = EXCLUDED.DA_CNAME,
-                        DA_SITE = EXCLUDED.DA_SITE
+                    {on_conflict_sql}
                     """,
                     values,
                 )
@@ -287,4 +317,31 @@ def get_all_inventory_event():
         FROM INVENTORY_EVENT
         """
     df=read_query(sql)
+    return df
+
+def add_new_event(event_name, event_date):
+    sql="""
+        INSERT INTO INVENTORY_EVENT (IE_NAME, IE_START)
+        VALUES (%s, %s)
+        """
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(sql, (event_name, event_date))
+        return True, "新增盤點事件成功！"
+    except Exception as error: 
+        return False, f"新增盤點事件失敗：{error}"
+
+def get_inventory_event_by_name(event_name): 
+    """用盤點事件名稱查詢盤點事件資料
+    Args:
+        event_name (str): 盤點事件名稱
+    Returns:
+        pandas.DataFrame: 盤點事件資料"""
+    sql="""
+        SELECT *
+        FROM INVENTORY_EVENT
+        WHERE IE_NAME = %s
+        """
+    df=read_query(sql, params=(event_name,))
     return df
