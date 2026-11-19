@@ -100,7 +100,7 @@ def save_realworld_site_and_unit_amount(
         for _, row in unit_rows.iterrows()
     ]
 
-    with read_query() as conn:
+    with postgres_link() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
