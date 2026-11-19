@@ -21,12 +21,10 @@ def count_sum_amount(result_list, df_unit_amount):
             sum_amount+=input_amount*unit_amount
     return sum_amount
 
-def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id, inventory_event_name):
+def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id, inventory_event_no):
     if site==None:
         result_container.error('請選擇櫃位。')
         return
-    
-    event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
     
     conn = sqlite_control.postgres_link()
     cursor = conn.cursor()
@@ -34,7 +32,7 @@ def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id
         if input_amount > 0:
             cursor.execute(
                 "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD, IR_EVENT_NO) VALUES (%s, %s, %s, %s, %s, %s)",
-                (user_id, diacode, site, unit, input_amount, event_no)
+                (user_id, diacode, site, unit, input_amount, inventory_event_no)
             )
     
             conn.commit()
@@ -78,8 +76,8 @@ if len(inventory_event_list)==1:
 else:
     disabled_type=False
 inventory_event_name=st.selectbox('請選擇盤點事件：', inventory_event_list, index=0, disabled=disabled_type)
-
-diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory()
+inventory_event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
+diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory(inventory_event_no)
 
 
 
@@ -105,8 +103,9 @@ keyword = st.selectbox(
 user_id='test'
 
 need_inventory=sqlite_control.get_need_inventory_from_keyword(keyword)
-
-if need_inventory.empty==True:
+if keyword_index==0 and need_inventory.empty==True:
+    pass
+elif need_inventory.empty==True:
     result_container=st.container()
     result_container.write('不在這次盤點品項中。')
 else:
@@ -163,6 +162,6 @@ else:
     #計算總量會因為線上版連線問題，使用體驗有先問題，先停掉
     #sum_amount = count_sum_amount(result_list, df_unit_amount)
     #result_container.subheader(f'總量：{sum_amount}')
-    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id, inventory_event_name))
+    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id, inventory_event_no))
     
 record_container=st.container()

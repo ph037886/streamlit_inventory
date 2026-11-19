@@ -168,19 +168,21 @@ def get_need_inventory_from_keyword(keyword):
         need_inventory=get_his_info_use_engname(keyword)
         return need_inventory
     
-def get_need_inventory_diacode_and_engname():
+def get_need_inventory_diacode_and_engname(inventory_event_no: int | None = None):
     sql="""
         SELECT DA_DIACODE, DA_EGNAME
         FROM NEED_INVENTORY
         LEFT JOIN FROM_HIS 
             ON NEED_INVENTORY.NI_DIACODE=FROM_HIS.DA_DIACODE
+        WHERE NEED_INVENTORY.NI_EVENT = %s
         """
     
-    df=read_query(sql)
+    df=read_query(sql, params=(inventory_event_no,))
     return df
 
-def auto_complete_diacode_and_engname_for_need_inventory():
-    df=get_need_inventory_diacode_and_engname()
+def auto_complete_diacode_and_engname_for_need_inventory(inventory_event_no: int | None = None):
+    df=get_need_inventory_diacode_and_engname(inventory_event_no)
+    print(df)
     diacode_list=df['DA_DIACODE'].tolist()
     engname_list=df['DA_EGNAME'].tolist()
     return diacode_list+engname_list
