@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite_control
 import time
 import pandas as pd
+import cv2
+import numpy as np
 
 def print_result(something):
     print(something)
@@ -79,7 +81,61 @@ inventory_event_name=st.selectbox('請選擇盤點事件：', inventory_event_li
 inventory_event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
 diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory(inventory_event_no)
 
+#QR code相機掃描後，會將醫令碼帶入keyword欄位，並自動帶入櫃位欄位，若櫃位有多個，則預設選擇第一個櫃位。
+if "camera_started" not in st.session_state:
+    st.session_state.camera_started = False
 
+if "qr_scan_result" not in st.session_state:
+    st.session_state.qr_scan_result = ""
+
+
+def close_camera():
+    st.session_state.camera_started = False
+    st.session_state.pop("qr_camera_input", None)
+
+
+if not st.session_state.camera_started:
+    if st.button("啟動相機，掃瞄藥盒QR code"):
+        st.session_state.pop("qr_camera_input", None)
+        st.session_state.camera_started = True
+        st.rerun()
+else:
+    st.button(
+        "關閉相機",
+        on_click=close_camera,
+    )
+
+captured_image = (
+    st.camera_input("相機畫面", key="qr_camera_input")
+    if st.session_state.camera_started
+    else None
+)
+
+if captured_image is not None:
+    image_bytes = np.frombuffer(captured_image.getvalue(), dtype=np.uint8)
+    image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
+
+    if image is None:
+        st.error("無法讀取相機影像。")
+    else:
+        detector = cv2.QRCodeDetector()
+        decoded_text, points, _ = detector.detectAndDecode(image)
+
+        if decoded_text:
+            st.session_state.qr_scan_result = decoded_text
+            st.session_state.camera_started = False
+            st.session_state.pop("qr_camera_input", None)
+            st.rerun()
+        else:
+            st.warning("尚未偵測到 QR code，請將鏡頭靠近後重新拍攝。")
+
+if st.session_state.qr_scan_result:
+    qr_result=st.session_state.qr_scan_result
+    qr_result_split=qr_result.split('id=')
+    if len(qr_result_split)==2:
+        st.session_state['keyword_selectbox']=qr_result_split[1]
+    else:
+        st.error("QR code格式錯誤，請重新掃描。")
 
 #url參數：醫令碼
 if 'diacode' in st.query_params and st.query_params['diacode'] is not None:
