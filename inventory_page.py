@@ -134,34 +134,47 @@ else:
             default_site=site_list[0]
     else:
         default_site=site_list[0]
-    
-    if len(site_list) == 1:
-        site = result_container.pills('請選擇櫃位：', site_list, default=default_site)
-    else:
-        site=result_container.pills(
-            '請選擇櫃位：', site_list, default=default_site)
-    
+
     #叫出排裝設定
     df_unit_amount=sqlite_control.get_unit_amount(diacode)
     unit_list=df_unit_amount['UA_UNIT'].tolist()
-    result_list=[]
-    i=-1
-    while i<len(unit_list):
-        if i==-1:
-            unit='散裝'
+
+    with result_container.form(key=f"inventory_form_{diacode}", clear_on_submit=False):
+        if len(site_list) == 1:
+            site = st.pills('請選擇櫃位：', site_list, default=default_site)
         else:
-            unit=unit_list[i]
-        i+=1
-        input_amount = result_container.number_input(
-            f'請輸入{unit}數量：',
-            min_value=0,
-            step=1,
-            key=f'input_amount_{diacode}_{unit}', #增加key，讓前面的reset_inventory_amounts()可以歸零
+            site=st.pills(
+                '請選擇櫃位：', site_list, default=default_site)
+        result_list = []
+        i = -1
+
+        while i < len(unit_list):
+            if i == -1:
+                unit = '散裝'
+            else:
+                unit = unit_list[i]
+
+            i += 1
+
+            input_amount = st.number_input(
+                f'請輸入{unit}數量：',
+                min_value=0,
+                step=1,
+                key=f'input_amount_{diacode}_{unit}',
+            )
+            result_list.append((input_amount, unit))
+
+        st.form_submit_button(
+            '送出',
+            on_click=record_inventory_amounts,
+            args=(
+                diacode,
+                site,
+                result_list,
+                df_unit_amount,
+                user_id,
+                inventory_event_no,
+            ),
         )
-        result_list.append((input_amount, unit))
-    #計算總量會因為線上版連線問題，使用體驗有先問題，先停掉
-    #sum_amount = count_sum_amount(result_list, df_unit_amount)
-    #result_container.subheader(f'總量：{sum_amount}')
-    result_container.button('送出', on_click=record_inventory_amounts, args=(diacode, site, result_list, df_unit_amount, user_id, inventory_event_no))
-    
+
 record_container=st.container()
