@@ -5,7 +5,7 @@ import sqlite_control
 
 st.title("上傳本次盤點品項表")
 
-inventory_event_name=st.text_input("請輸入本次盤點事件名稱", value="", key="inventory_event_name")
+inventory_event_name=st.text_input("請輸入本次盤點事件名稱", value="", key="inventory_event_name", help="建議輸入日期+事件，如2026/11/11盤點")
 
 inventory_event_datetime=st.date_input("請選擇本次盤點事件日期", value=None, key="inventory_event_datetime")
     

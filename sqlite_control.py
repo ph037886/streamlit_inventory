@@ -19,7 +19,14 @@ def read_query(sql, params=None):
     df.columns = [str(column).upper() for column in df.columns]
     return df
 
-def get_his_info_use_diacode(diacode): #取得藥品基本資料
+def get_his_info_use_diacode(diacode: str): #取得藥品基本資料
+    """用醫令碼取得藥品基本資料
+    Args:
+        diacode (str): 醫令碼
+    Returns:
+        pandas.DataFrame: 藥品基本資料
+    """
+    
     sql="""
     SELECT DA_DIACODE
     , DA_EGNAME
@@ -32,7 +39,13 @@ def get_his_info_use_diacode(diacode): #取得藥品基本資料
     df=read_query(sql, params=(diacode,))
     return df
 
-def get_his_info_use_engname(engname): #取得藥品基本資料
+def get_his_info_use_engname(engname: str): #取得藥品基本資料
+    """用商品名取得藥品基本資料
+    Args:
+        engname (str): 英文商品名
+    Returns:
+        pandas.DataFrame: 藥品基本資料
+    """
     sql="""
     SELECT DA_DIACODE
     , DA_EGNAME
@@ -47,6 +60,12 @@ def get_his_info_use_engname(engname): #取得藥品基本資料
     return df
 
 def get_realworld_site(diacode):
+    """用醫令碼取得真實櫃位資料
+    Args:
+        diacode (str): 醫令碼
+    Returns:
+        pandas.DataFrame: 真實櫃位資料
+    """
     sql="""
         SELECT *
         FROM REALWORLD_SITE
