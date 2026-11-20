@@ -82,6 +82,7 @@ inventory_event_name=st.selectbox('請選擇盤點事件：', inventory_event_li
 inventory_event_no = sqlite_control.get_inventory_event_by_name(inventory_event_name)["IE_NO"].values[0]
 diacode_and_engname_lsit=sqlite_control.auto_complete_diacode_and_engname_for_need_inventory(inventory_event_no)
 
+"""先關掉相機功能
 #QR code相機掃描後，會將醫令碼帶入keyword欄位，並自動帶入櫃位欄位，若櫃位有多個，則預設選擇第一個櫃位。
 if "camera_started" not in st.session_state:
     st.session_state.camera_started = False
@@ -190,6 +191,7 @@ poll_live_qr_result()
 
 if st.session_state.qr_scan_applied:
     st.success("掃描成功，已套用醫令碼及進入盤點品項。")
+"""
 
 #url參數：醫令碼
 if 'diacode' in st.query_params and st.query_params['diacode'] is not None:
