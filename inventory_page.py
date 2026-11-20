@@ -1,10 +1,6 @@
 import streamlit as st
 import sqlite_control
-import time
 import pandas as pd
-import cv2
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import threading
 
 def print_result(something):
     print(something)
@@ -26,32 +22,26 @@ def count_sum_amount(result_list, df_unit_amount):
 
 def record_inventory_amounts(diacode, site, result_list, df_unit_amount, user_id, inventory_event_no):
     if site==None:
-        result_container.error('請選擇櫃位。')
+        st.error('請選擇櫃位。')
         return
-    
-    conn = sqlite_control.postgres_link()
-    cursor = conn.cursor()
-    for input_amount, unit in result_list:
-        if input_amount > 0:
-            cursor.execute(
-                "INSERT INTO INVENTORY_RECORD (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT, IR_RECORD, IR_EVENT_NO) VALUES (%s, %s, %s, %s, %s, %s)",
-                (user_id, diacode, site, unit, input_amount, inventory_event_no)
-            )
-    
-            conn.commit()
-            conn.close()
-            with st.spinner("Wait for it...", show_time=True):
-                time.sleep(1)
-            sum_amount = count_sum_amount(result_list, df_unit_amount)
-            temporary_message = st.empty()
-            temporary_message.write(f'排裝後總量：{sum_amount}')
-            time.sleep(3)
-            temporary_message.empty()
-        else:
-            temporary_message = st.empty()
-            temporary_message.error(f'盤點數目為0不紀錄')
-            time.sleep(3)
-            temporary_message.empty()
+
+    if all(input_amount == 0 for input_amount, _ in result_list):
+        st.error('盤點數目為0不紀錄')
+        return
+
+    save_result = sqlite_control.save_inventory_amounts(
+        diacode,
+        site,
+        result_list,
+        user_id,
+        inventory_event_no,
+    )
+    if save_result == "unchanged":
+        st.info('盤點資料相同，不需變更。')
+        return
+
+    sum_amount = count_sum_amount(result_list, df_unit_amount)
+    st.success(f'盤點資料已儲存，排裝後總量：{sum_amount}')
 
 
 
@@ -142,12 +132,35 @@ else:
     df_unit_amount=sqlite_control.get_unit_amount(diacode)
     unit_list=df_unit_amount['UA_UNIT'].tolist()
 
+    site = result_container.pills(
+        '請選擇櫃位：',
+        site_list,
+        default=default_site,
+    )
+
+    existing_records = sqlite_control.find_existing_inventory_record(
+        diacode,
+        site,
+        inventory_event_no,
+    )
+    prefill_key = f'{inventory_event_no}:{diacode}:{site}'
+    if st.session_state.get('inventory_prefill_key') != prefill_key:
+        existing_amounts = (
+            existing_records
+            .drop_duplicates('IR_UNIT')
+            .set_index('IR_UNIT')['IR_RECORD']
+            .to_dict()
+        )
+        st.session_state['inventory_prefill_key'] = prefill_key
+        for unit in ['散裝'] + unit_list:
+            st.session_state[f'input_amount_{diacode}_{unit}'] = int(
+                existing_amounts.get(unit, 0)
+            )
+
+    if not existing_records.empty:
+        st.error('已有盤點資料')
+
     with result_container.form(key=f"inventory_form_{diacode}", clear_on_submit=False):
-        if len(site_list) == 1:
-            site = st.pills('請選擇櫃位：', site_list, default=default_site)
-        else:
-            site=st.pills(
-                '請選擇櫃位：', site_list, default=default_site)
         result_list = []
         i = -1
 
@@ -167,17 +180,16 @@ else:
             )
             result_list.append((input_amount, unit))
 
-        st.form_submit_button(
-            '送出',
-            on_click=record_inventory_amounts,
-            args=(
-                diacode,
-                site,
-                result_list,
-                df_unit_amount,
-                user_id,
-                inventory_event_no,
-            ),
+        submitted = st.form_submit_button('送出')
+
+    if submitted:
+        record_inventory_amounts(
+            diacode,
+            site,
+            result_list,
+            df_unit_amount,
+            user_id,
+            inventory_event_no,
         )
 
 record_container=st.container()

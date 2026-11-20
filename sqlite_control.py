@@ -300,6 +300,8 @@ def get_need_inventory_record(event_name: str | None = None) -> pd.DataFrame:
             INVENTORY_RECORD.IR_SITE = REALWORLD_SITE.RS_SITE
             OR REALWORLD_SITE.RS_SITE IS NULL
         )
+        AND INVENTORY_RECORD.IR_EVENT_NO = NEED_INVENTORY.NI_EVENT
+        AND INVENTORY_RECORD.IR_DC = FALSE
         LEFT JOIN UNIT_AMOUNT 
             ON (UNIT_AMOUNT.UA_DIACODE=INVENTORY_RECORD.IR_DIACODE 
             AND UNIT_AMOUNT.UA_UNIT=INVENTORY_RECORD.IR_UNIT)
@@ -352,3 +354,103 @@ def get_inventory_event_by_name(event_name):
         """
     df=read_query(sql, params=(event_name,))
     return df
+
+def find_existing_inventory_record(diacode, site, inventory_event_no):
+    sql="""
+        SELECT IR_ID
+        , IR_DIACODE
+        , IR_SITE
+        , IR_UNIT
+        , IR_RECORD
+        , IR_USER
+        , IR_TIME
+        , IR_EVENT_NO
+        , IR_DC
+        , IR_DC_TIME
+        FROM INVENTORY_RECORD
+        WHERE IR_DIACODE = %s
+        AND IR_SITE = %s
+        AND IR_EVENT_NO = %s
+        AND IR_DC = FALSE
+        ORDER BY IR_TIME DESC, IR_ID DESC
+        """
+    df=read_query(sql, params=(diacode, site, inventory_event_no))
+    return df
+
+
+def save_inventory_amounts(diacode, site, result_list, user_id, inventory_event_no,):
+    submitted_amounts = {
+        unit: int(amount)
+        for amount, unit in result_list
+    }
+
+    with postgres_link() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT IR_ID
+                , IR_UNIT
+                , IR_RECORD
+                FROM INVENTORY_RECORD
+                WHERE IR_DIACODE = %s
+                  AND IR_SITE = %s
+                  AND IR_EVENT_NO = %s
+                  AND IR_DC = FALSE
+                ORDER BY IR_TIME DESC, IR_ID DESC
+                FOR UPDATE
+                """,
+                (diacode, site, inventory_event_no),
+            )
+            existing_rows = cursor.fetchall()
+
+            existing_amounts = {}
+            existing_ids = []
+            for record_id, unit, amount in existing_rows:
+                existing_ids.append(record_id)
+                if unit not in existing_amounts:
+                    existing_amounts[unit] = amount
+
+            all_units = set(existing_amounts) | set(submitted_amounts)
+            is_unchanged = all(
+                existing_amounts.get(unit, 0)
+                == submitted_amounts.get(unit, 0)
+                for unit in all_units
+            )
+            if is_unchanged:
+                return "unchanged"
+
+            if existing_ids:
+                cursor.execute(
+                    """
+                    UPDATE INVENTORY_RECORD
+                    SET IR_DC = TRUE,
+                        IR_DC_TIME = CURRENT_TIMESTAMP
+                    WHERE IR_ID = ANY(%s)
+                    """,
+                    (existing_ids,),
+                )
+
+            insert_values = [
+                (
+                    user_id,
+                    diacode,
+                    site,
+                    unit,
+                    amount,
+                    inventory_event_no,
+                )
+                for unit, amount in submitted_amounts.items()
+                if amount > 0
+            ]
+            if insert_values:
+                cursor.executemany(
+                    """
+                    INSERT INTO INVENTORY_RECORD
+                        (IR_USER, IR_DIACODE, IR_SITE, IR_UNIT,
+                         IR_RECORD, IR_EVENT_NO)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    insert_values,
+                )
+
+    return "saved"
