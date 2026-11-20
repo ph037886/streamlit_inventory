@@ -3,7 +3,8 @@ import sqlite_control
 import time
 import pandas as pd
 import cv2
-import numpy as np
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
+import threading
 
 def print_result(something):
     print(something)
@@ -88,15 +89,45 @@ if "camera_started" not in st.session_state:
 if "qr_scan_result" not in st.session_state:
     st.session_state.qr_scan_result = ""
 
+if "qr_scan_applied" not in st.session_state:
+    st.session_state.qr_scan_applied = False
+
+if "_qr_live_state" not in st.session_state:
+    st.session_state._qr_live_state = {
+        "decoded_text": None,
+        "frame_count": 0,
+        "lock": threading.Lock(),
+    }
+
 
 def close_camera():
     st.session_state.camera_started = False
-    st.session_state.pop("qr_camera_input", None)
+    with st.session_state._qr_live_state["lock"]:
+        st.session_state._qr_live_state["decoded_text"] = None
+        st.session_state._qr_live_state["frame_count"] = 0
+
+
+def apply_qr_result(decoded_text):
+    qr_result_split = decoded_text.split('id=')
+    if len(qr_result_split) == 2:
+        diacode = qr_result_split[1].strip()
+        st.session_state.qr_scan_result = decoded_text
+        st.session_state.qr_scan_applied = True
+        st.session_state['keyword_selectbox'] = diacode
+        close_camera()
+    else:
+        st.session_state.qr_scan_result = ""
+        st.session_state.qr_scan_applied = False
+        close_camera()
+        st.error("QR code格式錯誤，請重新掃描。")
 
 
 if not st.session_state.camera_started:
     if st.button("啟動相機，掃瞄藥盒QR code"):
-        st.session_state.pop("qr_camera_input", None)
+        st.session_state.qr_scan_applied = False
+        with st.session_state._qr_live_state["lock"]:
+            st.session_state._qr_live_state["decoded_text"] = None
+            st.session_state._qr_live_state["frame_count"] = 0
         st.session_state.camera_started = True
         st.rerun()
 else:
@@ -105,37 +136,60 @@ else:
         on_click=close_camera,
     )
 
-captured_image = (
-    st.camera_input("相機畫面", key="qr_camera_input")
-    if st.session_state.camera_started
-    else None
-)
+if st.session_state.camera_started:
+    qr_live_state = st.session_state._qr_live_state
 
-if captured_image is not None:
-    image_bytes = np.frombuffer(captured_image.getvalue(), dtype=np.uint8)
-    image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
+    def qr_video_frame_callback(frame):
+        with qr_live_state["lock"]:
+            if qr_live_state["decoded_text"] is not None:
+                return frame
+            qr_live_state["frame_count"] += 1
+            if qr_live_state["frame_count"] % 5 != 0:
+                return frame
 
-    if image is None:
-        st.error("無法讀取相機影像。")
-    else:
+        image = frame.to_ndarray(format="bgr24")
         detector = cv2.QRCodeDetector()
         decoded_text, points, _ = detector.detectAndDecode(image)
 
         if decoded_text:
-            st.session_state.qr_scan_result = decoded_text
-            st.session_state.camera_started = False
-            st.session_state.pop("qr_camera_input", None)
-            st.rerun()
-        else:
-            st.warning("尚未偵測到 QR code，請將鏡頭靠近後重新拍攝。")
+            with qr_live_state["lock"]:
+                if qr_live_state["decoded_text"] is None:
+                    qr_live_state["decoded_text"] = decoded_text
 
-if st.session_state.qr_scan_result:
-    qr_result=st.session_state.qr_scan_result
-    qr_result_split=qr_result.split('id=')
-    if len(qr_result_split)==2:
-        st.session_state['keyword_selectbox']=qr_result_split[1]
-    else:
-        st.error("QR code格式錯誤，請重新掃描。")
+        return frame
+
+    webrtc_streamer(
+        key="inventory_qr_live",
+        mode=WebRtcMode.SENDRECV,
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        },
+        media_stream_constraints={
+            "video": {"facingMode": "environment"},
+            "audio": False,
+        },
+        video_frame_callback=qr_video_frame_callback,
+        async_processing=True,
+    )
+
+
+@st.fragment(run_every=1.0)
+def poll_live_qr_result():
+    if not st.session_state.camera_started:
+        return
+
+    with st.session_state._qr_live_state["lock"]:
+        decoded_text = st.session_state._qr_live_state["decoded_text"]
+
+    if decoded_text:
+        apply_qr_result(decoded_text)
+        st.rerun()
+
+
+poll_live_qr_result()
+
+if st.session_state.qr_scan_applied:
+    st.success("掃描成功，已套用醫令碼及進入盤點品項。")
 
 #url參數：醫令碼
 if 'diacode' in st.query_params and st.query_params['diacode'] is not None:
