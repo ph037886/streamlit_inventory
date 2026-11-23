@@ -235,6 +235,34 @@ def upload_from_his_or_inventory(df, table_name, retain_old_data):
             ),
             "update_columns": (),  # 重複資料不需要更新欄位
         },
+        "realworld_site": {
+            "columns": (
+                "RS_DIACODE",
+                "RS_SITE",
+                "RS_WORKTOP",
+            ),
+            "conflict_columns": (
+                "RS_DIACODE",
+                "RS_SITE",
+            ),
+            "update_columns": (
+                "RS_WORKTOP",
+            ),
+        },
+        "unit_amount": {
+            "columns": (
+                "UA_DIACODE",
+                "UA_UNIT",
+                "UA_AMOUNT",
+            ),
+            "conflict_columns": (
+                "UA_DIACODE",
+                "UA_UNIT",
+            ),
+            "update_columns": (
+                "UA_AMOUNT",
+            ),
+        },
     }
 
     if table_name not in allowed_tables:

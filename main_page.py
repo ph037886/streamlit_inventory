@@ -8,6 +8,8 @@ pages = [
 	st.Page('unit_amount_and_site_edit.py', title='櫃位及排裝設定'),
  	#st.Page('upload_from_his.py', title='上傳品項表'),
 	st.Page('upload_need_inventory.py', title='上傳盤點清單'),
+	#st.Page('upload_site.py', title='上傳櫃位清單'),
+	#st.Page('upload_unit.py', title='上傳排裝資料'),
 ]
 
 selected_page = st.navigation(pages, position='sidebar')
