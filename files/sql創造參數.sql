@@ -8,7 +8,7 @@ CREATE TABLE FROM_HIS ( /*從HIS匯入的資料*/
 
 CREATE TABLE REALWORLD_SITE ( /*真實櫃位*/
     RS_DIACODE VARCHAR(8) NOT NULL /*醫令碼，和真實櫃位連結*/
-        REFERENCES FROM_HIS (DA_DIACODE),
+        --REFERENCES FROM_HIS (DA_DIACODE),
     RS_SITE VARCHAR(10) NOT NULL, /*真實櫃位，可對應HIS內同櫃位，實際不同檯面，如：1A2-調1*/
     RS_WORKTOP VARCHAR(10) NOT NULL, /*分類，對應檯面，後續可計算檯面完成度，如：調1、住院針劑、小藥盒*/
     PRIMARY KEY (RS_DIACODE, RS_SITE)
@@ -16,7 +16,7 @@ CREATE TABLE REALWORLD_SITE ( /*真實櫃位*/
 
 CREATE TABLE UNIT_AMOUNT ( /*單位數量*/
     UA_DIACODE VARCHAR(8) NOT NULL /*醫令碼*/
-        REFERENCES FROM_HIS (DA_DIACODE),
+        --REFERENCES FROM_HIS (DA_DIACODE),
     UA_UNIT VARCHAR(5) NOT NULL, /*單位，如：排、盒、包*/
     UA_AMOUNT INTEGER NOT NULL CHECK (UA_AMOUNT > 0),  /*單位數量，正整數，如：14、28*/
     PRIMARY KEY (UA_DIACODE, UA_UNIT)
@@ -53,7 +53,7 @@ CREATE TABLE INVENTORY_EVENT ( /*盤點事件*/
 CREATE TABLE NEED_INVENTORY ( /*本次須盤點的品項*/
     NI_NO BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, /*主鍵*/
     NI_DIACODE VARCHAR(8) NOT NULL /*醫令碼*/
-        REFERENCES FROM_HIS (DA_DIACODE),
+        --REFERENCES FROM_HIS (DA_DIACODE),
     NI_EVENT BIGINT NOT NULL
         REFERENCES INVENTORY_EVENT (IE_NO), /*盤點事件，對應盤點事件表*/
     UNIQUE (NI_EVENT, NI_DIACODE) /*同一個盤點事件，不能有重複的醫令碼*/
@@ -76,3 +76,28 @@ CREATE VIEW SUM_WITH_UNIT AS /*計算排裝總量用*/
     , INVENTORY_RECORD.IR_UNIT
     , UNIT_AMOUNT.UA_UNIT
     , UNIT_AMOUNT.UA_AMOUNT;
+
+CREATE TABLE auth_users ( /*使用者表*/
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    display_name VARCHAR(100),
+    email VARCHAR(255) UNIQUE,
+    password_hash TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE auth_roles ( /*角色表*/
+    id BIGSERIAL PRIMARY KEY,
+    role_code VARCHAR(50) UNIQUE NOT NULL,
+    role_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE auth_user_roles ( /*使用者角色關聯表*/
+    user_id BIGINT REFERENCES auth_users(id)
+        ON DELETE CASCADE,
+    role_id BIGINT REFERENCES auth_roles(id)
+        ON DELETE CASCADE,
+    PRIMARY KEY (user_id, role_id)
+);
