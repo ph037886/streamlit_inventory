@@ -1,4 +1,5 @@
 import psycopg
+from psycopg.rows import dict_row
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -501,3 +502,79 @@ def save_inventory_amounts(diacode, site, result_list, user_id, inventory_event_
                 )
 
     return "saved"
+
+def get_credentials():
+    """取得啟用帳號及其角色，轉換為 authenticator 格式。"""
+
+    sql = """
+        SELECT
+            auth_users.username,
+            auth_users.display_name,
+            auth_users.email,
+            auth_users.password_hash,
+            ARRAY_REMOVE(
+                ARRAY_AGG(auth_roles.role_code),
+                NULL
+            ) AS roles
+        FROM auth_users
+        LEFT JOIN auth_user_roles
+            ON auth_users.id = auth_user_roles.user_id
+        LEFT JOIN auth_roles
+            ON auth_user_roles.role_id = auth_roles.id
+        WHERE auth_users.is_active = TRUE
+        GROUP BY auth_users.id
+    """
+
+    with postgres_link() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql)
+            users = cur.fetchall()
+
+    credentials = {"usernames": {}}
+
+    for user in users:
+        credentials["usernames"][user["username"].lower()] = {
+            "name": user["display_name"] or user["username"],
+            "email": user["email"] or "",
+            "password": user["password_hash"],
+            "roles": user["roles"] or [],
+        }
+
+    return {"usernames": credentials["usernames"]}
+
+
+from psycopg.rows import dict_row
+
+def get_active_user(username):
+    sql = """
+        SELECT
+            u.id,
+            u.username,
+            u.display_name,
+            u.email,
+            u.is_active,
+            COALESCE(
+                ARRAY_REMOVE(ARRAY_AGG(r.role_code), NULL),
+                ARRAY[]::varchar[]
+            ) AS roles
+        FROM auth_users AS u
+        LEFT JOIN auth_user_roles AS ur
+            ON u.id = ur.user_id
+        LEFT JOIN auth_roles AS r
+            ON ur.role_id = r.id
+        WHERE LOWER(TRIM(u.username)) = LOWER(TRIM(%s))
+          AND u.is_active = TRUE
+        GROUP BY
+            u.id,
+            u.username,
+            u.display_name,
+            u.email,
+            u.is_active
+    """
+
+    with postgres_link() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql, (username,))
+            user = cur.fetchone()
+
+    return user

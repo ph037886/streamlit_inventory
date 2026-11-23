@@ -1,3 +1,9 @@
+from login import require_login, require_role, logout_button
+
+user = require_login()
+user = require_role(["admin", "primary_edit"])
+logout_button()
+
 import streamlit as st
 import pandas as pd
 import chardet

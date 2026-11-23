@@ -218,3 +218,4 @@ __marimo__/
 .streamlit/secrets.toml
 .vscode/settings.json
 sqlite_control.py
+create_admin.py
