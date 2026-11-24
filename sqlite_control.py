@@ -3,6 +3,7 @@ from psycopg.rows import dict_row
 import streamlit as st
 import pandas as pd
 import numpy as np
+import bcrypt
 
 def postgres_link():
     return psycopg.connect(
@@ -578,3 +579,187 @@ def get_active_user(username):
             user = cur.fetchone()
 
     return user
+
+
+def get_auth_roles():
+    sql = """
+        SELECT id, role_code, role_name
+        FROM auth_roles
+        ORDER BY role_name, role_code
+    """
+
+    with postgres_link() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql)
+            return cur.fetchall()
+
+
+def get_auth_users():
+    sql = """
+        SELECT
+            auth_users.id,
+            auth_users.username,
+            auth_users.display_name,
+            auth_users.email,
+            auth_users.is_active,
+            auth_users.created_at,
+            auth_users.updated_at,
+            COALESCE(
+                ARRAY_REMOVE(ARRAY_AGG(auth_user_roles.role_id), NULL),
+                ARRAY[]::varchar[]
+            ) AS roles
+        FROM auth_users
+        LEFT JOIN auth_user_roles
+            ON auth_users.id = auth_user_roles.user_id
+        LEFT JOIN auth_roles
+            ON auth_user_roles.role_id = auth_roles.id
+        GROUP BY
+            auth_users.id,
+            auth_users.username,
+            auth_users.display_name,
+            auth_users.email,
+            auth_users.is_active,
+            auth_users.created_at,
+            auth_users.updated_at
+        ORDER BY auth_users.is_active DESC, auth_users.username
+    """
+
+    with postgres_link() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql)
+            return cur.fetchall()
+
+
+def create_auth_user(username, display_name, email, password, role_ids):
+    username = username.strip()
+    display_name = display_name.strip()
+    email = email.strip()
+
+    if not username or not display_name:
+        return False, "帳號及姓名不可空白"
+    if len(password) < 8:
+        return False, "密碼至少需要 8 個字元"
+
+    password_hash = bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(rounds=12),
+    ).decode("utf-8")
+
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO auth_users
+                        (username, display_name, email, password_hash, is_active)
+                    VALUES (%s, %s, NULLIF(%s, ''), %s, TRUE)
+                    RETURNING id
+                    """,
+                    (username, display_name, email, password_hash),
+                )
+                user_id = cur.fetchone()[0]
+
+                cur.executemany(
+                    """
+                    INSERT INTO auth_user_roles (user_id, role_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    [(user_id, role_id) for role_id in role_ids],
+                )
+        return True, "使用者新增成功"
+    except psycopg.errors.UniqueViolation as error:
+        if "username" in str(error):
+            return False, "此帳號已存在"
+        if "email" in str(error):
+            return False, "此 Email 已被使用"
+        return False, "帳號或 Email 已存在"
+    except Exception as error:
+        return False, f"使用者新增失敗：{error}"
+
+
+def set_auth_user_active(user_id, is_active):
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE auth_users
+                    SET is_active = %s,
+                        updated_at = NOW()
+                    WHERE id = %s
+                    """,
+                    (is_active, user_id),
+                )
+        return True, "使用者狀態已更新"
+    except Exception as error:
+        return False, f"更新使用者狀態失敗：{error}"
+
+
+def set_auth_user_roles(user_id, role_ids):
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM auth_user_roles WHERE user_id = %s",
+                    (user_id,),
+                )
+                cur.executemany(
+                    """
+                    INSERT INTO auth_user_roles (user_id, role_id)
+                    VALUES (%s, %s)
+                    """,
+                    [(user_id, role_id) for role_id in role_ids],
+                )
+        return True, "使用者權限已更新"
+    except Exception as error:
+        return False, f"更新使用者權限失敗：{error}"
+
+
+def reset_auth_user_password(user_id, password):
+    if len(password) < 8:
+        return False, "密碼至少需要 8 個字元"
+
+    password_hash = bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(rounds=12),
+    ).decode("utf-8")
+
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE auth_users
+                    SET password_hash = %s,
+                        updated_at = NOW()
+                    WHERE id = %s
+                    """,
+                    (password_hash, user_id),
+                )
+        return True, "密碼已重設"
+    except Exception as error:
+        return False, f"重設密碼失敗：{error}"
+
+
+def create_auth_role(role_code, role_name):
+    role_code = role_code.strip().lower()
+    role_name = role_name.strip()
+    if not role_code or not role_name:
+        return False, "角色代碼及角色名稱不可空白"
+
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO auth_roles (role_code, role_name)
+                    VALUES (%s, %s)
+                    """,
+                    (role_code, role_name),
+                )
+        return True, "角色新增成功"
+    except psycopg.errors.UniqueViolation:
+        return False, "角色代碼已存在"
+    except Exception as error:
+        return False, f"角色新增失敗：{error}"
