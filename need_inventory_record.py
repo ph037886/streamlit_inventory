@@ -73,6 +73,6 @@ completed_percentage = (
 #st.write(f'已盤點櫃位數：{completed_count} 'f'({completed_percentage:.1%})')
 #st.write(f'需盤點櫃位數：{filtered_count}')
 
-st.metric(label="總盤點狀況", value=f'{completed_count}/{filtered_count}', delta=f'{completed_percentage:.1%}', delta_color="blue", delta_arrow="off", border=True)
+st.metric(label="總盤點狀況", value=f'{completed_count}/{filtered_count}', delta=f'{completed_percentage:.1%}', delta_color="blue", delta_arrow="off", border=True, width='content')
 
 st.dataframe(filtered_df_record)
