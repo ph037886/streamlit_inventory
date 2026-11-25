@@ -63,8 +63,9 @@ if selected_worktops:
     ]
 
 st.subheader('盤點概要')
-completed_count = len(filtered_df_record.dropna(subset=['總量']))
-filtered_count = len(filtered_df_record)
+st.write('顯示總盤點狀況')
+completed_count = len(df_record.dropna(subset=['總量']))
+filtered_count = len(df_record)
 completed_percentage = (
     completed_count / filtered_count
     if filtered_count > 0
@@ -74,5 +75,27 @@ completed_percentage = (
 #st.write(f'需盤點櫃位數：{filtered_count}')
 
 st.metric(label="總盤點狀況", value=f'{completed_count}/{filtered_count}', delta=f'{completed_percentage:.1%}', delta_color="blue", delta_arrow="off", border=True, width='content')
+worktop_list=df_record['檯面'].dropna().drop_duplicates().sort_values().tolist()
+cols = st.columns(len(worktop_list))
+i=0
+for worktop in worktop_list:
+    worktop_df = df_record[df_record['檯面'] == worktop]
+    worktop_completed_count = len(worktop_df.dropna(subset=['總量']))
+    worktop_filtered_count = len(worktop_df)
+    worktop_completed_percentage = (
+        worktop_completed_count / worktop_filtered_count
+        if worktop_filtered_count > 0
+        else 0
+    )
+    if worktop_completed_percentage == 1:
+        percentage_color = "green"
+    else:
+        percentage_color = "blue"
+    with cols[i]:
+        st.metric(label=f"{worktop}盤點狀況", value=f'{worktop_completed_count}/{worktop_filtered_count}', delta=f'{worktop_completed_percentage:.1%}', delta_color=percentage_color, delta_arrow="off", border=True)
+    i += 1
+    if i >=5:
+        i = 0
+
 
 st.dataframe(filtered_df_record)
