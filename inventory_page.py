@@ -2,9 +2,6 @@ import streamlit as st
 import sqlite_control
 import pandas as pd
 
-def print_result(something):
-    print(something)
-
 def reset_inventory_amounts(): #在keyword重新輸入時，歸零數量欄位
     for key in st.session_state:
         if key.startswith('input_amount_'):

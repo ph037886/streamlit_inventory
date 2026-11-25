@@ -158,6 +158,20 @@ def save_realworld_site_and_unit_amount(
                 unit_values,
             )
 
+def get_all_worktop():
+    """取得所有檯面資料
+    Returns:
+        pandas.DataFrame: 檯面資料
+    """
+    sql="""
+        SELECT DISTINCT RS_WORKTOP
+        FROM REALWORLD_SITE
+        WHERE RS_WORKTOP IS NOT NULL
+        ORDER BY RS_WORKTOP
+        """
+    df=read_query(sql)
+    return df
+
 def get_all_inventory_record():
     sql="""
         SELECT *
