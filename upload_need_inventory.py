@@ -9,6 +9,15 @@ import pandas as pd
 import chardet
 import sqlite_control
 
+def mapping_not_in_from_his(df):
+    # 取得 HIS 資料庫中的品項編號清單
+    his_item_numbers = sqlite_control.get_his_item_numbers()
+
+    # 找出 df 中不在 HIS 資料庫中的品項編號
+    not_in_his = df[~df['NI_ITEM'].isin(his_item_numbers)]
+
+    return not_in_his
+
 st.title("上傳本次盤點品項表")
 
 inventory_event_name=st.text_input("請輸入本次盤點事件名稱", value="", key="inventory_event_name", help="建議輸入日期+事件，如2026/11/11盤點")

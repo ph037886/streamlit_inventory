@@ -1,9 +1,23 @@
+from login import require_login, require_role, logout_button
+
+user = require_login()
+user = require_role(["admin", "primary_edit"])
+logout_button()
+
 import streamlit as st
 import pandas as pd
 import chardet
 import sqlite_control
 
-st.title("上傳品項表")
+st.title("上傳資料")
+
+upload_option_dict={
+    "從 HIS 匯入": "from_his",
+    "櫃位資料匯入": "realworld_site",
+    "排裝資料匯入": "unit_amount",}
+
+
+upload_option = st.selectbox("選擇匯入項目", options=list(upload_option_dict.keys()))
 
 retain_old_data = st.toggle("保留舊資料", value=False, key="retain_old_data")
 
