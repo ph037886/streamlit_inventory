@@ -6,10 +6,26 @@ logout_button()
 
 import streamlit as st
 import sqlite_control
+import pandas as pd
 
+@st.dialog(title="關閉盤點事件")
+def close_inventory_event(event_name):
+    def close_event(event_name):
+        is_success, message = sqlite_control.change_inventory_event_end_time(event_name, pd.Timestamp.now())
+        if is_success:
+            return f"盤點事件 '{event_name}' 已關閉。"
+        else:
+            return f"關閉盤點事件 '{event_name}' 失敗：{message}"
+    st.write(f"確定要關閉盤點事件： '{event_name}' 嗎？")
+    if st.button("確認"):
+        result = close_event(event_name)
+        st.write(result)
+    if st.button("取消"):
+        st.rerun()
 st.header('盤點結果')
 
-event_list = sqlite_control.get_all_inventory_event()['IE_NAME'].tolist()
+inventory_event= sqlite_control.get_all_inventory_event()
+event_list = inventory_event['IE_NAME'].tolist()
 selected_event = st.selectbox('請選擇盤點事件：', event_list, index=0)
 
 df_record=sqlite_control.get_need_inventory_record(selected_event)
@@ -62,7 +78,17 @@ if selected_worktops:
         filtered_df_record['檯面'].isin(selected_worktops)
     ]
 
-st.subheader('盤點概要')
+summary_title, close_event= st.columns([1, 1])
+
+summary_title.subheader('盤點概要')
+
+event_end_time = inventory_event.loc[inventory_event['IE_NAME'] == selected_event, 'IE_END'].values[0]
+if pd.isna(event_end_time):
+    close_event.button('關閉盤點事件', on_click=close_inventory_event, args=(selected_event,))
+else:
+    event_end_time = pd.to_datetime(event_end_time).strftime('%Y-%m-%d %H:%M:%S')
+    close_event.write(f"盤點事件已於 {event_end_time} 關閉。")
+
 st.write('顯示總盤點狀況')
 completed_count = len(df_record.dropna(subset=['總量']))
 filtered_count = len(df_record)

@@ -777,3 +777,26 @@ def create_auth_role(role_code, role_name):
         return False, "角色代碼已存在"
     except Exception as error:
         return False, f"角色新增失敗：{error}"
+    
+def change_inventory_event_end_time(event_name: str, end_time: str) -> tuple[bool, str]:
+    """更改盤點事件結束時間
+    Args:
+        event_name (str): 盤點事件名稱
+        end_time (str): 結束時間
+    Returns:
+        tuple[bool, str]: (是否成功, 訊息)
+    """
+    try:
+        with postgres_link() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE INVENTORY_EVENT
+                    SET IE_END = %s
+                    WHERE IE_NAME = %s
+                    """,
+                    (end_time, event_name),
+                )
+        return True, "盤點事件已結束"
+    except Exception as error:
+        return False, f"結束盤點事件失敗：{error}"
