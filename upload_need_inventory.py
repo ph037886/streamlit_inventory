@@ -10,13 +10,13 @@ import chardet
 import sqlite_control
 
 def mapping_not_in_from_his(df):
-    # 取得 HIS 資料庫中的品項編號清單
-    his_item_numbers = sqlite_control.get_his_item_numbers()
+    # 取得 HIS 資料庫中的品項醫令碼清單
+    his_diacode=sqlite_control.get_all_diacode_and_engname()["DA_DIACODE"].tolist()
 
-    # 找出 df 中不在 HIS 資料庫中的品項編號
-    not_in_his = df[~df['NI_ITEM'].isin(his_item_numbers)]
+    # 找出 df 中不在 HIS 資料庫中的品項醫令碼
+    not_in_his_diacode = df[~df['NI_DIACODE'].isin(his_diacode)]
 
-    return not_in_his
+    return not_in_his_diacode
 
 st.title("上傳本次盤點品項表")
 
@@ -51,6 +51,10 @@ if uploaded_file is not None:
                 is_success, message = sqlite_control.upload_from_his_or_inventory(df, "need_inventory", True)
                 if is_success:
                     st.success(message)
+                    not_in_his_diacode = mapping_not_in_from_his(df)
+                    if not not_in_his_diacode.empty:
+                        st.warning("以下品項醫令碼不在 HIS 資料庫中，請新增資料：")
+                        st.write(not_in_his_diacode['NI_DIACODE'])
                 else:
                     st.error(message)
             else:
